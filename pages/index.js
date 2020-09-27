@@ -1,65 +1,65 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import Link from "next/link";
+import Error from "next/error";
+import Layout from "../src/components/Layout";
+import fetch from "isomorphic-fetch";
 
-export default function Home() {
-  return (
-    <div className={styles.container}>
-      <Head>
-        <title>Create Next App</title>
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+class Home extends React.Component {
+  static async getInitialProps({ req, res, query }) {
+    let data;
+    let page;
+    // console.log(query);
+    try {
+      page = Number(query.page) || 1;
+      const response = await fetch(
+        `https://node-hnapi.herokuapp.com/news?page=${page}`
+      );
+      data = await response.json();
+      console.log(data);
+    } catch (error) {
+      data = [];
+    }
+    return { data, page };
+  }
+  render() {
+    let { data, page } = this.props;
 
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/import?filter=next.js&utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
-        </div>
-      </main>
-
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+    if (data.length === 0) {
+      return <Error statusCode={503} />;
+    } else {
+      return (
+        <Layout
+          title="Hacker News Clone"
+          description="This is a practice clone of hacker news built using next.js"
         >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
-    </div>
-  )
+          <div className="container-page">
+            {data.map((res, indx) => {
+              return (
+                <div key={res.id} className="news-wrap">
+                  <h6 className="name-trio">
+                    {indx + 1 + ". "}&#x25B2;
+                    <a className="title" href={res.url}>
+                      {res.title}
+                    </a>
+                  </h6>
+                  <div className="pointes-wrap ml-3">
+                    <p>{res.points} points by</p> <p>{res.user}</p>
+                    <p className="pl-1"> {res.time_ago} |</p>
+                    <Link href={`/comments?id=${res.id}`}>
+                      <a className="comment">{res.comments_count} comments</a>
+                    </Link>
+                  </div>
+                </div>
+              );
+            })}
+            <Link href={`/?page=${page + 1}`}>
+              <a className="more">More</a>
+            </Link>
+          </div>
+        </Layout>
+      );
+    }
+  }
 }
+
+export default Home;
